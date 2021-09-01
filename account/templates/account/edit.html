@@ -48,8 +48,8 @@
         <div class="row justify-content-center">
             <div class="col-12 d-flex justify-content-center">
 
-                <div class="card profile-card mt-3 mb-3">
-                    <div class="card-body">
+                <div class="card profile-card mt-3 mb-3 d-flex justify-content-center" style="width: 450px !important;align-items: center;flex-direction: column">
+                    <div class="card-body" style="width: 100% !important;">
                         <div class="d-flex flex-column justify-content-center p-4">
                             <div class="mb-2" id="id_image_crop_confirm">
                                 <span id="id_cancel" class="material-icons">cancel</span>
@@ -85,7 +85,7 @@
                                 {% for field in form %}
                                     <p>
                                         {% for error in field.errors %}
-                                            <p style="color: red">{{ error }}</p>
+                                            <p style="color: red;font-size: 16px">{{ error }}</p>
                                         {% endfor %}
                                     </p>
                                 {% endfor %}
