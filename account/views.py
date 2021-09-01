@@ -16,7 +16,7 @@ def index(request, user_id):
     context = {
         "user": request.user
     }
-    return render(request, template_name="home.html", context=context)
+    return render(request, template_name="account/profile.html", context=context)
 
 
 def register_view(request, *args, **kwargs):

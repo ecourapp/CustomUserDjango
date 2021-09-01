@@ -3,16 +3,18 @@
 {% block title %}{{ user.username }} | Profile{% endblock %}
 
 {% block content %}
-    <p>Your email is : {{ user.email }}</p>
-    <br>
-    <p>Your username is : {{ user.username }}</p>
-    <br>
-    <p>Profile Image: </p>
-    <img height="500" width="500" alt="" src="{{ user.profile_image.url }}">
-    <br>
-    <br>
-    <a href="{% url 'logout' %}">Logout</a>
-    <br>
-    <br>
-    <a href="{% url 'account:edit_profile' user.id %}">Update</a>
+    <h1 style="text-transform: capitalize">welcome!</h1>
+    <p>What do you want to do?</p>
+    <div class="row">
+        <div class="col-6">
+            <a href="{% url 'login' %}">
+                <button class="btn btn-primary btn-lg">Login</button>
+            </a>
+        </div>
+        <div class="col-6">
+            <a href="{% url 'account:register' %}">
+                <button class="btn btn-primary btn-lg">Register</button>
+            </a>
+        </div>
+    </div>
 {% endblock %}
