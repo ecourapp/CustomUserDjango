@@ -7,8 +7,18 @@ from django.contrib.auth import login, authenticate
 from account.forms import RegistrationForm, AccountUpdateForm
 from django.urls import reverse_lazy
 from django.views import generic
+from django.core.files.storage import default_storage
+from django.core.files.storage import FileSystemStorage
+import os
+import cv2
+import json
+import base64
+import requests
+from django.core import files
 
 from account.models import Account
+
+TEMP_PROFILE_IMAGE_NAME = "temp_profile_image.png"
 
 
 @login_required(login_url="/accounts/login")
@@ -71,13 +81,70 @@ def edit_profile(request, *args, **kwargs):
                                      })
     else:
         form = AccountUpdateForm(
-                                 initial={
-                                     "id": account.pk,
-                                     "email": account.email,
-                                     "username": account.username,
-                                     "profile_image": account.profile_image.url,
-                                     "hide_email": account.hide_email
-                                 })
+            initial={
+                "id": account.pk,
+                "email": account.email,
+                "username": account.username,
+                "profile_image": account.profile_image.url,
+                "hide_email": account.hide_email
+            })
     context['form'] = form
     context['DATA_UPLOAD_MAX_MEMORY_SIZE'] = settings.DATA_UPLOAD_MAX_MEMORY_SIZE
     return render(request, 'account/edit.html', context=context)
+
+
+def save_temp_profile_image_from_base64(image_string, user):
+    INCORRECT_PADDING_EXCEPTION = "Incorrect padding"
+    try:
+        if not os.path.exists(settings.TEMP):
+            os.mkdir(settings.TEMP)
+        if not os.path.exists(settings.TEMP + "/" + str(user.pk)):
+            os.mkdir(settings.TEMP + "/" + str(user.pk))
+        url = os.path.join(settings.TEMP + "/" + str(user.pk), TEMP_PROFILE_IMAGE_NAME)
+        storage = FileSystemStorage(location=url)
+        image = base64.b64decode(image_string)
+        with storage.open('', 'wb+') as destination:
+            destination.write(image)
+            destination.close()
+    except Exception as e:
+        if str(e) == INCORRECT_PADDING_EXCEPTION:
+            image_string += "=" * ((4 - len(image_string) % 4) % 4)
+            return save_temp_profile_image_from_base64(image_string, user)
+    return None
+
+
+@login_required(login_url="/accounts/login")
+def crop_image(request, *args, **kwargs):
+    payload = {}
+    user = request.user
+    if request.POST:
+        try:
+            image_string = request.POST.get["image"]
+            url = save_temp_profile_image_from_base64(image_string, user)
+            img = cv2.imread(url)
+            crop_x = int(float(str(request.POST.get("cropX"))))
+            crop_y = int(float(str(request.POST.get("cropY"))))
+            crop_width = int(float(str(request.POST.get("cropWidth"))))
+            crop_height = int(float(str(request.POST.get("cropHeight"))))
+
+            if crop_x < 0:
+                crop_x = 0
+
+            if crop_y < 0:
+                crop_y = 0
+
+            crop_img = img[crop_y:crop_y + crop_height, crop_x:crop_x + crop_width]
+            cv2.imwrite(url, crop_img)
+            user.profile_image.delete()
+            user.profile_image.save("profile_image.png", files.File(open(url, "rb")))
+            user.save()
+
+            payload['result'] = "success"
+            payload["cropped_profile_image"] = user.profile_image.url
+
+            os.remove(url)
+        except Exception as e:
+            payload["result"] = "error"
+            payload["exception"] = str(e)
+
+        return HttpResponse(json.dumps(payload), content_type="application/json")
