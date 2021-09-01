@@ -12,7 +12,7 @@ from account.models import Account
 
 
 @login_required(login_url="/accounts/login")
-def index(request, user_id):
+def index(request):
     context = {
         "user": request.user
     }
@@ -22,7 +22,8 @@ def index(request, user_id):
 def register_view(request, *args, **kwargs):
     user = request.user
     if user.is_authenticated:
-        return HttpResponse(f"You are already authenticated as {user.email}")
+        return HttpResponse(f"You are already authenticated as {user.email} <br> <a href='/accounts/logout'>Logout</a>"
+                            f"<br><a href='/accounts/profile'>Profile</a>")
     context = {
         "user": user
     }

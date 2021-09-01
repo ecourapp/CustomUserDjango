@@ -3,16 +3,24 @@
 {% block title %}{{ user.username }} | Profile{% endblock %}
 
 {% block content %}
-    <p>Your email is : {{ user.email }}</p>
-    <br>
-    <p>Your username is : {{ user.username }}</p>
-    <br>
-    <p>Profile Image: </p>
-    <img height="500" width="500" alt="" src="{{ user.profile_image.url }}">
-    <br>
-    <br>
-    <a href="{% url 'logout' %}">Logout</a>
-    <br>
-    <br>
-    <a href="{% url 'account:edit_profile' user.id %}">Update</a>
+    <style>
+        .btn {
+            width: 80% !important;
+            margin: 0 10%
+        }
+    </style>
+    <div class="row">
+        <div class="col-12 d-flex justify-content-center pt-5">
+            <div class="card" style="width: 18rem;">
+                <img src="{{ user.profile_image.url }}" class="card-img-top" alt="avatar">
+                <div class="card-body">
+                    <h5 class="card-title">{{ user.username }}</h5>
+                    <p class="card-text">{{ user.email }}</p>
+                    <a href="{% url 'account:edit_profile' user.pk %}" class="btn btn-primary">Update</a>
+                    <br>
+                    <a href="{% url 'logout' %}" class="btn btn-outline-danger mt-2">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
