@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 import os
+import tempfile
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -147,3 +148,6 @@ LOGIN_REDIRECT_URL = "/accounts/profile"
 LOGOUT_REDIRECT_URL = "/accounts/login"
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760
+
+TEMP_DIR = tempfile.mkdtemp(prefix='django_')
+os.environ['DJANGO_TEST_TEMP_DIR'] = TEMP_DIR

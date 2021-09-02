@@ -1,3 +1,5 @@
+import math
+
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -95,56 +97,71 @@ def edit_profile(request, *args, **kwargs):
 
 def save_temp_profile_image_from_base64(image_string, user):
     INCORRECT_PADDING_EXCEPTION = "Incorrect padding"
+    directory = settings.TEMP_DIR
     try:
-        if not os.path.exists(settings.TEMP):
-            os.mkdir(settings.TEMP)
-        if not os.path.exists(settings.TEMP + "/" + str(user.pk)):
-            os.mkdir(settings.TEMP + "/" + str(user.pk))
-        url = os.path.join(settings.TEMP + "/" + str(user.pk), TEMP_PROFILE_IMAGE_NAME)
+        if not os.path.exists(directory):
+            os.mkdir(directory)
+        if not os.path.exists(directory + "/" + str(user.pk)):
+            os.mkdir(directory + "/" + str(user.pk))
+        url = os.path.join(directory + "/" + str(user.pk), TEMP_PROFILE_IMAGE_NAME)
         storage = FileSystemStorage(location=url)
         image = base64.b64decode(image_string)
         with storage.open('', 'wb+') as destination:
             destination.write(image)
             destination.close()
+        return url
     except Exception as e:
         if str(e) == INCORRECT_PADDING_EXCEPTION:
             image_string += "=" * ((4 - len(image_string) % 4) % 4)
             return save_temp_profile_image_from_base64(image_string, user)
-    return None
+
+
+def set_float(data):
+    floated = float(data)
+    number = int(floated)
+    return number
 
 
 @login_required(login_url="/accounts/login")
 def crop_image(request, *args, **kwargs):
     payload = {}
-    user = request.user
-    if request.POST:
+    user_email = request.user.email
+    user = Account.objects.get(email=user_email)
+    if request.POST and user.is_authenticated:
         try:
-            image_string = request.POST.get["image"]
+            image_string = request.POST.get("image")
             url = save_temp_profile_image_from_base64(image_string, user)
+            print(f"url: {url}")
             img = cv2.imread(url)
-            crop_x = int(float(str(request.POST.get("cropX"))))
-            crop_y = int(float(str(request.POST.get("cropY"))))
-            crop_width = int(float(str(request.POST.get("cropWidth"))))
-            crop_height = int(float(str(request.POST.get("cropHeight"))))
 
+            crop_x = set_float(data=request.POST.get("cropX"))
+            crop_y = set_float(data=request.POST.get("cropY"))
+            crop_width = set_float(data=request.POST.get("cropWidth"))
+            crop_height = set_float(data=request.POST.get("cropHeight"))
             if crop_x < 0:
                 crop_x = 0
-
-            if crop_y < 0:
+            if crop_y < 0:  # There is a bug with cropperjs. y can be negative.
                 crop_y = 0
-
             crop_img = img[crop_y:crop_y + crop_height, crop_x:crop_x + crop_width]
+
             cv2.imwrite(url, crop_img)
+
+            # delete the old image
             user.profile_image.delete()
-            user.profile_image.save("profile_image.png", files.File(open(url, "rb")))
+
+            # Save the cropped image to user model
+            user.profile_image.save("profile_image.png", files.File(open(url, 'rb')))
             user.save()
 
             payload['result'] = "success"
-            payload["cropped_profile_image"] = user.profile_image.url
+            payload['cropped_profile_image'] = user.profile_image.url
 
+            # delete temp file
             os.remove(url)
-        except Exception as e:
-            payload["result"] = "error"
-            payload["exception"] = str(e)
 
-        return HttpResponse(json.dumps(payload), content_type="application/json")
+        except Exception as e:
+            payload['result'] = "error"
+            payload['exception'] = str(e)
+            raise e
+    return HttpResponse(json.dumps(payload), content_type="application/json")
+
