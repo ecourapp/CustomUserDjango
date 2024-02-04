@@ -6,24 +6,24 @@ from django.utils.translation import gettext as _
 
 class MyAccountManager(BaseUserManager):
     # Create a new user
-    def create_user(self, email, username, password=None):
+    def create_user(self, email, uname, password=None):
         if not email:
             raise ValueError("Users must have an email address")
-        if not username:
+        if not uname:
             raise ValueError("Users must have an username")
         user = self.model(
             email=self.normalize_email(email),
-            username=username,
+            uname=uname,
         )
         user.set_password(password)
         user.save(using=self._db)
         return user
 
     # Create a new superuser
-    def create_superuser(self, email, username, password):
+    def create_superuser(self, email, uname, password):
         user = self.create_user(
             email=self.normalize_email(email),
-            username=username,
+            uname=uname,
             password=password
         )
         user.is_admin = True
@@ -43,7 +43,7 @@ def get_default_profile_image():
 
 class Account(AbstractBaseUser):
     email = models.EmailField(verbose_name=_("Email"), max_length=60, unique=True)
-    username = models.CharField(verbose_name=_("Username"), max_length=16, unique=True)
+    uname = models.CharField(verbose_name=_("Username"), max_length=16, unique=True)
     date_joined = models.DateTimeField(verbose_name=_("Date Joined"), auto_now=False, auto_now_add=True)
     last_login = models.DateTimeField(verbose_name=_("Last Entry"), auto_now=True)
     is_admin = models.BooleanField(default=False)
@@ -57,10 +57,10 @@ class Account(AbstractBaseUser):
     objects = MyAccountManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    REQUIRED_FIELDS = ['uname']
 
     def __str__(self):
-        return self.username
+        return self.uname
 
     def get_profile_image_filename(self):
         return str(self.profile_image)[str(self.profile_image).index(f'profiles/{self.pk}/'):]

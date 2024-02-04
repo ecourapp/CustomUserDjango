@@ -68,16 +68,18 @@ def edit_profile(request, *args, **kwargs):
         return HttpResponse("You cannot edit someone else's profile!")
     context = {}
     if request.POST:
-        form = AccountUpdateForm(request.POST, request.FILES, instance=request.user)
+        instance = Account.objects.get(email=request.user.email)
+        form = AccountUpdateForm(request.POST, request.FILES, instance=instance)
         if form.is_valid():
             form.save()
-            return redirect("account:view", user_id=account.pk)
+            return redirect("account:view")
         else:
-            form = AccountUpdateForm(request.POST, instance=request.user,
+            print(form.errors)
+            form = AccountUpdateForm(request.POST, instance=instance,
                                      initial={
                                          "id": account.pk,
                                          "email": account.email,
-                                         "username": account.username,
+                                         "uname": account.uname,
                                          "profile_image": account.profile_image.url,
                                          "hide_email": account.hide_email
                                      })
@@ -86,10 +88,10 @@ def edit_profile(request, *args, **kwargs):
             initial={
                 "id": account.pk,
                 "email": account.email,
-                "username": account.username,
+                "uname": account.uname,
                 "profile_image": account.profile_image.url,
                 "hide_email": account.hide_email
-            })
+            },)
     context['form'] = form
     context['DATA_UPLOAD_MAX_MEMORY_SIZE'] = settings.DATA_UPLOAD_MAX_MEMORY_SIZE
     return render(request, 'account/edit.html', context=context)
